@@ -1,0 +1,12 @@
+@startuml с4_context
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "Пользователь")
+System(interface, "Интерфейс")
+System(service, "Сервис")
+
+Rel(user, interface, "Взаимодействует с соцсетью - регистрируется, создает/обновляет/удаляет посты, взаимодействует со своей и чужими стенами/постами (лайки, комментарии), смотрит статистику")
+Rel(interface, service, "Посылает запросы")
+
+@enduml

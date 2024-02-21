@@ -1,0 +1,43 @@
+@startuml
+
+entity "Users" as users {
+  * UserID : int <<PK>>
+  --
+  * UserName : varchar
+  * Email : varchar
+  * Password : varchar
+  * DateRegistered : datetime
+}
+
+entity "Posts" as posts {
+  * PostID : int <<PK>>
+  * UserID : int <<FK>>
+  --
+  * Title : varchar
+  * Content : text
+  * DatePosted : datetime
+}
+
+entity "Statistics" as stat {
+  * StatID : int <<PK>>
+  * PostID : int <<FK>>
+  --
+  * LikesCount : int
+  * ViewsCount : int
+}
+
+entity "Comments" as comments {
+  * CommentID : int <<PK>>
+  * PostID : int <<FK>>
+  * UserID : int <<FK>>
+  --
+  * CommentText : text
+  * DateCommented : datetime
+}
+
+users ||--o{ posts
+posts ||--o{ comments
+users ||--o{ comments
+posts ||--|| stat
+
+@enduml

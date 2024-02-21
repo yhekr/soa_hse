@@ -1,0 +1,31 @@
+@startuml с4_containers
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!includeurl https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons/python.puml
+!includeurl https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons/postgresql.puml
+!includeurl <cloudinsight/kafka>
+
+Person(user, "Пользователь")
+
+Container(frontend, "Frontend", "JavaScript/React", "Интерфейс пользователя для социальной сети.")
+Container(main_service, "Main Service", "Python/Flask", "Обрабатывает клиентские запросы, регистрацию и аутентификацию.", "python")
+Container(stats_service, "Stats Service", "Python/Flask", "Обрабатывает статистику постов.", "python")
+Container(posts_service, "Posts and Comments Service", "Python", "Управляет постами и комментариями.", "python")
+
+ContainerDb(main_db, "Main Database", "PostgreSQL", "Хранит данные пользователей и детали аутентификации.", "postgresql")
+ContainerDb(stats_db, "Stats Clickhouse", "Clickhouse", "Хранит статистику")
+ContainerDb(posts_db, "Posts Database", "PostgreSQL", "Хранит посты и комментарии.", "postgresql")
+
+ContainerQueue(topic, "topic", "kafka", "Брокер сообщений о событиях", "kafka")
+
+Rel(user, frontend, "Взаимодействует с соцсетью")
+Rel(frontend, main_service, "Использует REST API")
+Rel(main_service, main_db, "Читает и записывает данные")
+Rel(main_service, posts_service, "Отправляет данные через gRPC")
+Rel(main_service, stats_service, "Отправляет данные через gRPC")
+Rel(stats_service, stats_db, "Читает и записывает данные")
+Rel(posts_service, posts_db, "Читает и записывает данные")
+Rel(main_service, topic, "Пишет в топик")
+Rel(topic, stats_service, "Читает топик")
+
+@enduml
