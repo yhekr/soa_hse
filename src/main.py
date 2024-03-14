@@ -19,9 +19,6 @@ engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
-current_user_login = None
-
-# User model
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, autoincrement=True, primary_key=True, index=True)
@@ -29,12 +26,16 @@ class User(Base):
     password = Column(String)
     details = Column(JSON)
 
+class CurrentSession(Base):
+    __tablename__ = 'current_session'
+    id = Column(Integer, primary_key=True, index=True)
+    login = Column(String, nullable=False)
+
 @app.on_event("startup")
 async def startup_event():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-# Register new user
 @app.post('/register')
 async def register(user_data: UserAuth):
     login = user_data.login
@@ -63,26 +64,34 @@ async def authenticate(user_data: UserAuth):
         if not user or user.password != password:
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    global current_user_login
-    current_user_login = login
+        result = await session.execute(select(CurrentSession))
+        current_session = result.scalar()
+        if current_session:
+            current_session.login = login
+        else:
+            new_session = CurrentSession(login=login)
+            session.add(new_session)
+        await session.commit()
+
     return {"message": "Authentication successful"}
+
 
 @app.post('/update')
 async def update(user_update_data: UserUpdate):
-    if not current_user_login:
-        raise HTTPException(status_code=401, detail="Unauthorized")
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.login == current_user_login))
-        user = result.scalar()
-        print(user.details)
+        result = await session.execute(select(CurrentSession))
+        current_session = result.scalar()
+        if not current_session:
+            raise HTTPException(status_code=401, detail="Unauthorized")
 
+        result = await session.execute(select(User).where(User.login == current_session.login))
+        user = result.scalar()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         user_details = user.details or {}
+        print(user_details)
         update_data = user_update_data.dict()
-
-        print(update_data)
         user.details = {**user_details, **update_data}
 
         await session.commit()
